@@ -3,8 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
-<title>VR INVENTARIO TIEMPO REAL CEREZO 15.10.2025</title>
-<!-- Paleta: azul, rojo, blanco -->
+<title>VR INVENTARIO (Automático)</title>
 <style>
   :root{
     --azul:#0b67d0;
@@ -18,532 +17,218 @@
     background:linear-gradient(180deg,#071028 0%, #072a4a 60%);
     color:var(--blanco);
     font-family:Inter, system-ui, Arial, sans-serif;
-    -webkit-font-smoothing:antialiased;
-    -moz-osx-font-smoothing:grayscale;
-  }
-
-  /* Contenedor full */
-  .app{
-    position:relative;
-    height:100vh;
-    width:100vw;
     overflow:hidden;
   }
-
-  /* Video ocupa todo el fondo */
-  video#cam {
-    position:absolute;
-    inset:0;
-    width:100%;
-    height:100%;
-    object-fit:cover;
-  }
-
-  /* Canvas overlay para dibujar cajas/contornos */
-  canvas#overlay {
-    position:absolute;
-    inset:0;
-    width:100%;
-    height:100%;
-    pointer-events:none; /* El canvas es solo para dibujar, no para interactuar */
-  }
-
-  /* UI superior */
-  .topbar {
-    position:absolute;
-    left:12px;
-    top:12px;
-    z-index:50;
-    display:flex;
-    gap:10px;
-    align-items:center;
-  }
-  .brand {
-    background:rgba(11,103,208,var(--ui-opacity));
-    color:var(--blanco);
-    padding:8px 12px;
-    border-radius:10px;
-    font-weight:700;
-    box-shadow:0 6px 18px rgba(3,12,30,0.6);
-    display:flex;
-    gap:8px;
-    align-items:center;
-  }
-  .brand .dot {
-    width:10px;height:10px;border-radius:50%;
-    background:var(--rojo); box-shadow:0 0 6px var(--rojo);
-  }
-  button#startBtn{
-    background:rgba(0,0,0,0.2);
-    color:var(--blanco);
-    border:2px solid rgba(255,255,255,0.12);
-    padding:8px 12px;
-    border-radius:10px;
-    cursor:pointer;
-    backdrop-filter:blur(4px);
-    transition: all 150ms ease;
-  }
-  button#startBtn:hover{ border-color:rgba(255,255,255,0.3); transform:translateY(-2px); }
-
-  /* Indicador inferior */
-  .hint {
-    position:absolute;
-    left:50%;
-    transform:translateX(-50%);
-    bottom:18px;
-    z-index:50;
-    background:rgba(0,0,0,0.35);
-    color:var(--blanco);
-    padding:8px 12px;
-    border-radius:999px;
-    font-size:14px;
-  }
-
-  /* Popup de la imagen */
-  .qr-popup {
-    position:absolute;
-    z-index:200;
-    display:flex;
-    pointer-events:none; /* No se puede hacer clic en el popup en sí */
-    transition: opacity 200ms ease, transform 200ms ease;
-    /* Centrado en su coordenada de anclaje */
-    transform: translate(-50%, -50%); 
-  }
-
-  .qr-img-wrap{
-    position:relative;
-    width:25vw; /* ocupa ~25% de la pantalla */
-    max-width:280px;
-    min-width: 150px;
-    aspect-ratio: 1 / 1;
-    display:block;
-    transform-origin:center;
-    animation:float 4s ease-in-out infinite;
-    will-change:transform;
-    z-index:210;
-  }
-  @keyframes float {
-    0% { transform: translateY(0px) }
-    50% { transform: translateY(-10px) }
-    100% { transform: translateY(0px) }
-  }
-
-  .qr-img-wrap img{
-    width:100%;
-    height:100%;
-    object-fit:contain;
-    display:block;
-    background:none;
-    filter: drop-shadow(0 14px 25px rgba(2,6,23,0.55));
-  }
-
-  .close-x {
-    position:absolute;
-    right:-12px;
-    top:-12px;
-    width:34px;height:34px;
-    border-radius:50%;
-    background:var(--rojo);
-    color:var(--blanco);
-    display:flex;align-items:center;justify-content:center;
-    font-weight:700;
-    box-shadow:0 6px 18px rgba(0,0,0,0.4);
-    cursor:pointer;
-    z-index:220;
-    pointer-events: auto; /* Solo el botón de cerrar es interactivo */
-  }
-
-  /* Temporizador visual */
-  .popup-timer {
-    position: absolute;
-    bottom: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80%;
-    height: 4px;
-    background: rgba(255,255,255,0.2);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-  
-  .popup-timer-fill {
-    height: 100%;
-    background: var(--azul);
-    width: 100%;
-    transition: width 10s linear;
-  }
-
-  /* Animaciones */
-  .pulse { animation: pulse 1.6s infinite; }
-  @keyframes pulse {
-    0% { box-shadow:0 0 0 0 rgba(255,255,255,0.06); }
-    70% { box-shadow:0 0 0 14px rgba(11,103,208,0.02); }
-    100% { box-shadow:0 0 0 0 rgba(255,255,255,0); }
-  }
-  
-  .popup-enter {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.8);
-  }
-  .popup-exit {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.8);
-  }
-
-  @media (max-width:600px){
-    .qr-img-wrap{ width:36vw; max-width:200px; }
-  }
+  .app{position:relative;height:100vh;width:100vw;overflow:hidden;}
+  video#cam{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  canvas#overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+  .topbar{position:absolute;left:12px;top:12px;z-index:50;display:flex;gap:10px;align-items:center;}
+  .brand{background:rgba(11,103,208,var(--ui-opacity));padding:8px 12px;border-radius:10px;font-weight:700;display:flex;gap:8px;align-items:center;}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--rojo);box-shadow:0 0 6px var(--rojo);}
+  button#startBtn{background:rgba(0,0,0,0.2);color:var(--blanco);border:2px solid rgba(255,255,255,0.12);
+    padding:8px 12px;border-radius:10px;cursor:pointer;backdrop-filter:blur(4px);transition:all 150ms ease;}
+  button#startBtn:hover{border-color:rgba(255,255,255,0.3);transform:translateY(-2px);}
+  .hint{position:absolute;left:50%;transform:translateX(-50%);bottom:18px;z-index:50;background:rgba(0,0,0,0.35);
+    color:var(--blanco);padding:8px 12px;border-radius:999px;font-size:14px;}
+  .qr-popup{position:absolute;z-index:200;display:flex;pointer-events:none;transition:opacity 200ms ease,transform 200ms ease;
+    transform:translate(-50%,-50%);}
+  .qr-img-wrap{position:relative;width:25vw;max-width:280px;min-width:150px;aspect-ratio:1/1;display:block;
+    transform-origin:center;animation:float 4s ease-in-out infinite;will-change:transform;z-index:210;}
+  @keyframes float{0%{transform:translateY(0)}50%{transform:translateY(-10px)}100%{transform:translateY(0)}}
+  .qr-img-wrap img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 14px 25px rgba(2,6,23,0.55));}
+  .close-x{position:absolute;right:-12px;top:-12px;width:34px;height:34px;border-radius:50%;background:var(--rojo);
+    display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:0 6px 18px rgba(0,0,0,0.4);
+    cursor:pointer;z-index:220;pointer-events:auto;}
+  .popup-timer{position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);width:80%;height:4px;
+    background:rgba(255,255,255,0.2);border-radius:2px;overflow:hidden;}
+  .popup-timer-fill{height:100%;background:var(--azul);width:100%;transition:width 10s linear;}
+  .pulse{animation:pulse 1.6s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,255,255,0.06);}70%{box-shadow:0 0 0 14px rgba(11,103,208,0.02);}
+    100%{box-shadow:0 0 0 0 rgba(255,255,255,0);}}
+  .popup-enter{opacity:0;transform:translate(-50%,-50%) scale(0.8);}
+  .popup-exit{opacity:0;transform:translate(-50%,-50%) scale(0.8);}
+  @media (max-width:600px){.qr-img-wrap{width:36vw;max-width:200px;}}
 </style>
 </head>
 <body>
 <div class="app" id="app">
   <video id="cam" autoplay playsinline muted></video>
   <canvas id="overlay"></canvas>
-
   <div class="topbar">
-    <div class="brand">
-      <div class="dot"></div>
-      <div>INVVR CEREZO 10.2025</div>
-    </div>
+    <div class="brand"><div class="dot"></div><div>VR INVENTARIO</div></div>
     <button id="startBtn" class="pulse">Iniciar Cámara</button>
   </div>
-
   <div class="hint" id="hint">Apunta la cámara a un QR para ver el producto.</div>
-  <!-- Contenedor para los popups de las imágenes -->
   <div id="popups" style="position:absolute;inset:0;pointer-events:none;"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-
 <script>
-// --- CONFIGURACIÓN ---
-// Pega aquí la URL RAW de tu CSV en GitHub.
-// El CSV debe tener las columnas: qr,imageUrl
-const GITHUB_RAW_CSV_URL = "https://raw.githubusercontent.com/FJCRNX/QRactivosK/refs/heads/main/base.csv"; 
+const GITHUB_RAW_CSV_URL="https://raw.githubusercontent.com/FJCRNX/QRactivosK/refs/heads/main/base.csv";
+const video=document.getElementById('cam');
+const overlay=document.getElementById('overlay');
+const octx=overlay.getContext('2d');
+const popupsContainer=document.getElementById('popups');
+const hint=document.getElementById('hint');
+const startBtn=document.getElementById('startBtn');
+const internalCanvas=document.createElement('canvas');
+let qrMap=new Map(),activePopups=new Map();
+let running=false,lastDetectionTime=0;
+const MAX_POPUPS=10,POPUP_DURATION=10000,DETECTION_INTERVAL=200;
 
-// --- Variables Globales ---
-const video = document.getElementById('cam');
-const overlay = document.getElementById('overlay');
-const octx = overlay.getContext('2d');
-const popupsContainer = document.getElementById('popups');
-const hint = document.getElementById('hint');
-const startBtn = document.getElementById('startBtn');
+// --- NUEVAS VARIABLES PARA MOVIMIENTO 3D ---
+let gyroData={alpha:0,beta:0,gamma:0};
+let gpsOffset={lat:0,lon:0};
+let parallaxX=0,parallaxY=0,parallaxZ=1;
 
-// Canvas interno para leer frames del video sin mostrarlo
-const internalCanvas = document.createElement('canvas');
-
-let qrMap = new Map(); // Mapa de: qrData -> imageUrl
-let activePopups = new Map(); // Mapa de: qrData -> { element, location, timeoutId, timerFill }
-const MAX_POPUPS = 10; // Máximo de imágenes simultáneas
-let running = false;
-const POPUP_DURATION = 10000; // 10 segundos en milisegundos
-
-// Optimización: reducir la frecuencia de detección para mejor rendimiento
-let lastDetectionTime = 0;
-const DETECTION_INTERVAL = 200; // Detectar QR cada 200ms (5 veces por segundo)
-
-
-// --- LÓGICA PRINCIPAL ---
-
-// 1. Cargar la base de datos de QR desde el archivo CSV
-async function loadCSVMap() {
-  let csvText = '';
-  const exampleCSV = `qr,imageUrl\nQR-24,https://png.pngtree.com/png-vector/20241225/ourlarge/pngtree-football-without-background-png-image_14845468.png?text=Ejemplo`;
-
-  if (GITHUB_RAW_CSV_URL) {
-    try {
-      const r = await fetch(GITHUB_RAW_CSV_URL);
-      if (!r.ok) throw new Error('No se pudo cargar CSV desde GitHub: ' + r.status);
-      csvText = await r.text();
-      hint.textContent = "Base de datos cargada. ¡Listo para escanear!";
-    } catch (err) {
-      console.warn(err);
-      hint.textContent = "Error al cargar CSV. Usando datos de ejemplo.";
-      csvText = exampleCSV; // Fallback a datos de ejemplo
-    }
-  } else {
-      hint.textContent = "Usando datos de ejemplo.";
-      csvText = exampleCSV;
-  }
-
-  // Parsear el CSV
-  const lines = csvText.trim().split(/\r?\n/);
-  lines.slice(1).forEach(line => {
-    const [qr, imageUrl] = line.split(',').map(c => c.trim());
-    if (qr && imageUrl) qrMap.set(qr, imageUrl);
+// Cargar CSV
+async function loadCSVMap(){
+  let csvText='';
+  const fallback="qr,imageUrl\nQR-24,https://png.pngtree.com/png-vector/20241225/ourlarge/pngtree-football-without-background-png-image_14845468.png";
+  try{
+    const r=await fetch(GITHUB_RAW_CSV_URL);
+    if(!r.ok) throw new Error("Error CSV");
+    csvText=await r.text();
+    hint.textContent="Base de datos cargada.";
+  }catch{csvText=fallback;hint.textContent="Usando datos de ejemplo.";}
+  csvText.trim().split(/\r?\n/).slice(1).forEach(l=>{
+    const [qr,img]=l.split(',').map(c=>c.trim());
+    if(qr&&img)qrMap.set(qr,img);
   });
-  console.log('qrMap cargado. Entradas:', qrMap.size);
 }
 
-// 2. Iniciar la cámara con máxima calidad
-async function startCamera() {
-  try {
-    // Obtener dispositivos disponibles para seleccionar la cámara trasera
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const videoDevices = devices.filter(device => device.kind === 'videoinput');
-    const rearCamera = videoDevices.find(device => 
-      device.label.toLowerCase().includes('back') || 
-      device.label.toLowerCase().includes('rear') ||
-      device.label.toLowerCase().includes('environment')
-    );
-    
-    // Configuración para máxima calidad
-    const constraints = {
-      video: {
-        facingMode: "environment",
-        width: { ideal: 1920 },
-        height: { ideal: 1080 },
-        frameRate: { ideal: 30 }
-      },
-      audio: false
+// Iniciar cámara
+async function startCamera(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1920},height:{ideal:1080}},audio:false});
+    video.srcObject=stream;
+    video.onloadedmetadata=()=>{
+      video.play();fitCanvas();running=true;
+      requestAnimationFrame(detectionLoop);
+      startBtn.textContent="Cámara Activa";startBtn.classList.remove('pulse');
+      hint.textContent="Escaneando QR...";
     };
-    
-    // Si encontramos una cámara trasera específica, usarla
-    if (rearCamera) {
-      constraints.video.deviceId = { exact: rearCamera.deviceId };
-    }
-    
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    video.srcObject = stream;
-    
-    // Aplicar la máxima calidad posible
-    const track = stream.getVideoTracks()[0];
-    const capabilities = track.getCapabilities();
-    const settings = track.getSettings();
-    
-    console.log("Capacidades de la cámara:", capabilities);
-    console.log("Configuración actual:", settings);
-    
-    video.onloadedmetadata = () => {
-      video.play();
-      fitCanvasToScreen();
-      running = true;
-      requestAnimationFrame(detectionLoop); // Iniciar el bucle de detección
-      startBtn.textContent = "Cámara Activa";
-      startBtn.classList.remove('pulse');
-      hint.textContent = "Escaneando QR...";
-    };
-    window.addEventListener('resize', fitCanvasToScreen);
-  } catch (err) {
-    console.error('Error al acceder a la cámara:', err);
-    alert('No se pudo acceder a la cámara: ' + err.message);
-  }
+    window.addEventListener('resize',fitCanvas);
+  }catch(e){alert("Error cámara: "+e.message);}
+}
+function fitCanvas(){
+  overlay.width=overlay.clientWidth;overlay.height=overlay.clientHeight;
+  if(video.videoWidth)internalCanvas.width=video.videoWidth,internalCanvas.height=video.videoHeight;
 }
 
-// 3. Ajustar los canvas al tamaño de la pantalla y del video
-function fitCanvasToScreen() {
-  overlay.width = overlay.clientWidth;
-  overlay.height = overlay.clientHeight;
-  
-  // Ajustar el canvas interno al tamaño real del video
-  if (video.videoWidth && video.videoHeight) {
-    internalCanvas.width = video.videoWidth;
-    internalCanvas.height = video.videoHeight;
-  }
-}
-
-// 4. Bucle principal de detección (se ejecuta en cada fotograma)
-function detectionLoop() {
-  if (!running || video.readyState < video.HAVE_ENOUGH_DATA) {
-    requestAnimationFrame(detectionLoop);
-    return;
-  }
-  
-  // Ajustar el tamaño del canvas si el video cambia
-  if (internalCanvas.width !== video.videoWidth || 
-      internalCanvas.height !== video.videoHeight) {
-    fitCanvasToScreen();
-  }
-  
-  // Optimización: Solo procesar detección cada 200ms para mejor rendimiento
-  const now = Date.now();
-  if (now - lastDetectionTime < DETECTION_INTERVAL) {
-    requestAnimationFrame(detectionLoop);
-    return;
-  }
-  lastDetectionTime = now;
-  
-  // Configurar el contexto del canvas interno con willReadFrequently para optimización
-  const ictx = internalCanvas.getContext('2d', { willReadFrequently: true });
-  ictx.drawImage(video, 0, 0, internalCanvas.width, internalCanvas.height);
-  const imageData = ictx.getImageData(0, 0, internalCanvas.width, internalCanvas.height);
-
-  // Detectar códigos QR
-  const code = jsQR(imageData.data, imageData.width, imageData.height, { 
-    inversionAttempts: "dontInvert" 
-  });
-  
-  const detections = code ? [code] : []; // Convertimos a array para un manejo consistente
-
-  octx.clearRect(0, 0, overlay.width, overlay.height);
-  const detectedQRDataInFrame = new Set();
-
-  // Dibuja los polígonos de los QR detectados
-  detections.forEach(det => {
-    drawPolygon(det.location);
-    detectedQRDataInFrame.add(det.data);
-  });
-
-  // NO eliminamos popups cuando el QR desaparece de la vista
-  // Solo actualizamos la posición de los popups activos si su QR sigue visible
-  for (const [qrData, popupData] of activePopups.entries()) {
-    if (detectedQRDataInFrame.has(qrData)) {
-      // Si el QR sigue visible, actualizamos la posición del popup
-      const detection = detections.find(d => d.data === qrData);
-      if (detection) {
-        updatePopupPosition(qrData, detection.location);
-      }
-    }
-    // Si el QR no está visible, el popup permanece en su última posición conocida
-  }
-
-  // Añadir nuevos popups para QR recién detectados
-  for (const det of detections) {
-    if (!activePopups.has(det.data) && activePopups.size < MAX_POPUPS) {
-      // Si es un QR nuevo y hay espacio, creamos un nuevo popup
-      const imageUrl = qrMap.get(det.data);
-      if (imageUrl) {
-        createPopupForQR(det.data, imageUrl, det.location);
-      } else {
-        console.log("QR detectado pero no encontrado en la base de datos:", det.data);
-      }
+// --- BUCLE DE DETECCIÓN QR ---
+function detectionLoop(){
+  if(!running||video.readyState<video.HAVE_ENOUGH_DATA){requestAnimationFrame(detectionLoop);return;}
+  if(Date.now()-lastDetectionTime<DETECTION_INTERVAL){requestAnimationFrame(detectionLoop);return;}
+  lastDetectionTime=Date.now();
+  const ictx=internalCanvas.getContext('2d',{willReadFrequently:true});
+  ictx.drawImage(video,0,0,internalCanvas.width,internalCanvas.height);
+  const img=ictx.getImageData(0,0,internalCanvas.width,internalCanvas.height);
+  const code=jsQR(img.data,img.width,img.height,{inversionAttempts:"dontInvert"});
+  const detections=code?[code]:[];
+  octx.clearRect(0,0,overlay.width,overlay.height);
+  const visible=new Set();
+  detections.forEach(d=>{drawPolygon(d.location);visible.add(d.data);});
+  for(const [data,p] of activePopups.entries()){
+    if(visible.has(data)){
+      const det=detections.find(x=>x.data===data);
+      updatePopupPosition(data,det.location);
     }
   }
-
+  for(const det of detections){
+    if(!activePopups.has(det.data)&&activePopups.size<MAX_POPUPS){
+      const url=qrMap.get(det.data);
+      if(url)createPopup(det.data,url,det.location);
+    }
+  }
   requestAnimationFrame(detectionLoop);
 }
-
-// 5. Dibujar el polígono rojo alrededor del QR
-function drawPolygon(loc) {
-  const scaleX = overlay.width / internalCanvas.width;
-  const scaleY = overlay.height / internalCanvas.height;
-
-  octx.lineWidth = 4;
-  octx.strokeStyle = 'rgba(224,36,36,0.95)';
+function drawPolygon(loc){
+  const sx=overlay.width/internalCanvas.width,sy=overlay.height/internalCanvas.height;
+  octx.lineWidth=4;octx.strokeStyle='rgba(224,36,36,0.95)';
   octx.beginPath();
-  octx.moveTo(loc.topLeftCorner.x * scaleX, loc.topLeftCorner.y * scaleY);
-  octx.lineTo(loc.topRightCorner.x * scaleX, loc.topRightCorner.y * scaleY);
-  octx.lineTo(loc.bottomRightCorner.x * scaleX, loc.bottomRightCorner.y * scaleY);
-  octx.lineTo(loc.bottomLeftCorner.x * scaleX, loc.bottomLeftCorner.y * scaleY);
-  octx.closePath();
-  octx.stroke();
+  octx.moveTo(loc.topLeftCorner.x*sx,loc.topLeftCorner.y*sy);
+  octx.lineTo(loc.topRightCorner.x*sx,loc.topRightCorner.y*sy);
+  octx.lineTo(loc.bottomRightCorner.x*sx,loc.bottomRightCorner.y*sy);
+  octx.lineTo(loc.bottomLeftCorner.x*sx,loc.bottomLeftCorner.y*sy);
+  octx.closePath();octx.stroke();
 }
 
-// 6. Crear un nuevo popup en el DOM
-function createPopupForQR(qrData, imageUrl, location) {
-  const popup = document.createElement('div');
-  popup.className = 'qr-popup popup-enter'; // Inicia con animación de entrada
-
-  const inner = document.createElement('div');
-  inner.className = 'qr-img-wrap';
-  
-  const img = document.createElement('img');
-  img.src = imageUrl;
-  img.alt = `Imagen para ${qrData}`;
-  
-  // Manejar errores de carga de imagen
-  img.onerror = function() {
-    console.error("Error al cargar la imagen:", imageUrl);
-    // Crear una imagen de reemplazo
-    this.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%230b67d0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='16' fill='white'%3EImagen no disponible%3C/text%3E%3C/svg%3E";
-  };
-
-  const close = document.createElement('div');
-  close.className = 'close-x';
-  close.innerHTML = '✕';
-  close.addEventListener('click', (e) => {
-    e.stopPropagation();
-    removePopup(qrData);
-  });
-
-  // Crear temporizador visual
-  const timerContainer = document.createElement('div');
-  timerContainer.className = 'popup-timer';
-  const timerFill = document.createElement('div');
-  timerFill.className = 'popup-timer-fill';
-  timerContainer.appendChild(timerFill);
-
-  inner.appendChild(img);
-  inner.appendChild(close);
-  inner.appendChild(timerContainer);
-  popup.appendChild(inner);
-  popupsContainer.appendChild(popup);
-
-  // Iniciar animación del temporizador
-  setTimeout(() => {
-    timerFill.style.width = '0%';
-  }, 10);
-
-  // Configurar timeout para eliminar automáticamente después de 10 segundos
-  const timeoutId = setTimeout(() => {
-    removePopup(qrData);
-  }, POPUP_DURATION);
-
-  activePopups.set(qrData, { 
-    element: popup, 
-    location,
-    timeoutId,
-    timerFill
-  });
-  
-  updatePopupPosition(qrData, location); // Posicionar correctamente
-  
-  // Quitar la clase de animación de entrada para que no se repita
-  setTimeout(() => popup.classList.remove('popup-enter'), 200);
+// Crear popup
+function createPopup(qr,imgUrl,loc){
+  const div=document.createElement('div');
+  div.className='qr-popup popup-enter';
+  const wrap=document.createElement('div');
+  wrap.className='qr-img-wrap';
+  const img=document.createElement('img');
+  img.src=imgUrl;img.alt=qr;
+  img.onerror=()=>{img.src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><rect width='200' height='200' fill='%230b67d0'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='white'>No disponible</text></svg>";};
+  const close=document.createElement('div');
+  close.className='close-x';close.textContent='✕';
+  close.onclick=e=>{e.stopPropagation();removePopup(qr);}
+  const timer=document.createElement('div');
+  timer.className='popup-timer';
+  const fill=document.createElement('div');
+  fill.className='popup-timer-fill';
+  timer.appendChild(fill);
+  wrap.appendChild(img);wrap.appendChild(close);wrap.appendChild(timer);
+  div.appendChild(wrap);popupsContainer.appendChild(div);
+  setTimeout(()=>fill.style.width='0%',10);
+  const timeoutId=setTimeout(()=>removePopup(qr),POPUP_DURATION);
+  activePopups.set(qr,{element:div,location:loc,timeoutId,timer:fill});
+  updatePopupPosition(qr,loc);
+  setTimeout(()=>div.classList.remove('popup-enter'),200);
+}
+function updatePopupPosition(qr,loc){
+  const p=activePopups.get(qr);if(!p)return;
+  const sx=overlay.width/internalCanvas.width,sy=overlay.height/internalCanvas.height;
+  const cx=(loc.topLeftCorner.x+loc.bottomRightCorner.x)/2;
+  const cy=(loc.topLeftCorner.y+loc.bottomRightCorner.y)/2;
+  const x=cx*sx+parallaxX*40;
+  const y=cy*sy+parallaxY*40;
+  const scale=parallaxZ;
+  p.element.style.left=`${x}px`;
+  p.element.style.top=`${y}px`;
+  p.element.style.transform=`translate(-50%,-50%) scale(${scale})`;
+}
+function removePopup(qr){
+  const p=activePopups.get(qr);if(!p)return;
+  clearTimeout(p.timeoutId);
+  p.element.classList.add('popup-exit');
+  setTimeout(()=>{p.element.remove();activePopups.delete(qr);},200);
 }
 
-// 7. Actualizar la posición de un popup existente
-function updatePopupPosition(qrData, location) {
-  const popupData = activePopups.get(qrData);
-  if (!popupData) return;
-
-  const scaleX = overlay.width / internalCanvas.width;
-  const scaleY = overlay.height / internalCanvas.height;
-
-  // Calcular el centro del QR
-  const centerX = (location.topLeftCorner.x + location.bottomRightCorner.x) / 2;
-  const centerY = (location.topLeftCorner.y + location.bottomRightCorner.y) / 2;
-  
-  // Escalar a las coordenadas de la pantalla
-  const screenX = centerX * scaleX;
-  const screenY = centerY * scaleY;
-  
-  popupData.element.style.left = `${screenX}px`;
-  popupData.element.style.top = `${screenY}px`;
-  popupData.location = location; // Guardar la última ubicación
-}
-
-// 8. Función para eliminar un popup
-function removePopup(qrData) {
-  const popupData = activePopups.get(qrData);
-  if (!popupData) return;
-
-  // Limpiar el timeout si existe
-  if (popupData.timeoutId) {
-    clearTimeout(popupData.timeoutId);
+// --- GESTIÓN DE MOVIMIENTO / PARALLAX ---
+function setupSensors(){
+  if(window.DeviceOrientationEvent){
+    window.addEventListener('deviceorientation',e=>{
+      gyroData={alpha:e.alpha||0,beta:e.beta||0,gamma:e.gamma||0};
+      parallaxX=(gyroData.gamma||0)/60;
+      parallaxY=(gyroData.beta||0)/90;
+      parallaxZ=1+Math.abs(gyroData.beta||0)/180*0.2;
+      for(const [qr,p] of activePopups.entries())updatePopupPosition(qr,p.location);
+    });
   }
-
-  // Animación de salida
-  popupData.element.classList.add('popup-exit');
-  setTimeout(() => {
-    if (popupData.element.parentNode) {
-      popupData.element.remove();
-    }
-    activePopups.delete(qrData);
-  }, 200);
+  if(navigator.geolocation){
+    navigator.geolocation.watchPosition(pos=>{
+      gpsOffset.lat=pos.coords.latitude;
+      gpsOffset.lon=pos.coords.longitude;
+      parallaxX=(gpsOffset.lon%1-0.5)*2;
+      parallaxY=(gpsOffset.lat%1-0.5)*2;
+    });
+  }
 }
 
-
-// --- Eventos de Inicialización ---
-startBtn.addEventListener('click', async () => {
-  if (!running) {
-    await loadCSVMap(); // Asegurarse que los datos están cargados
+// Inicialización
+startBtn.onclick=async()=>{
+  if(!running){
+    await loadCSVMap();
     await startCamera();
+    setupSensors();
   }
-});
-
-// Precargar el CSV al cargar la página para una experiencia más rápida
+};
 loadCSVMap();
 </script>
 </body>
 </html>
+
