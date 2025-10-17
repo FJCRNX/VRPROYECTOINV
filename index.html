@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
-<title>VR INVENTARIO 3D (Automático)</title>
+<title>VR INVENTARIO (Automático)</title>
 <style>
   :root{
     --azul:#0b67d0;
@@ -19,7 +19,7 @@
     font-family:Inter, system-ui, Arial, sans-serif;
     overflow:hidden;
   }
-  .app{position:relative;height:100vh;width:100vw;overflow:hidden;perspective:900px;}
+  .app{position:relative;height:100vh;width:100vw;overflow:hidden;}
   video#cam{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
   canvas#overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
   .topbar{position:absolute;left:12px;top:12px;z-index:50;display:flex;gap:10px;align-items:center;}
@@ -30,11 +30,12 @@
   button#startBtn:hover{border-color:rgba(255,255,255,0.3);transform:translateY(-2px);}
   .hint{position:absolute;left:50%;transform:translateX(-50%);bottom:18px;z-index:50;background:rgba(0,0,0,0.35);
     color:var(--blanco);padding:8px 12px;border-radius:999px;font-size:14px;}
-  .qr-popup{position:absolute;z-index:200;display:flex;pointer-events:none;transition:opacity 200ms ease,transform 200ms ease;}
+  .qr-popup{position:absolute;z-index:200;display:flex;pointer-events:none;transition:opacity 200ms ease,transform 200ms ease;
+    transform:translate(-50%,-50%);}
   .qr-img-wrap{position:relative;width:25vw;max-width:280px;min-width:150px;aspect-ratio:1/1;display:block;
     transform-origin:center;animation:float 4s ease-in-out infinite;will-change:transform;z-index:210;}
   @keyframes float{0%{transform:translateY(0)}50%{transform:translateY(-10px)}100%{transform:translateY(0)}}
-  .qr-img-wrap img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 14px 25px rgba(2,6,23,0.55));transition:filter 0.2s;}
+  .qr-img-wrap img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 14px 25px rgba(2,6,23,0.55));}
   .close-x{position:absolute;right:-12px;top:-12px;width:34px;height:34px;border-radius:50%;background:var(--rojo);
     display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:0 6px 18px rgba(0,0,0,0.4);
     cursor:pointer;z-index:220;pointer-events:auto;}
@@ -44,8 +45,8 @@
   .pulse{animation:pulse 1.6s infinite;}
   @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,255,255,0.06);}70%{box-shadow:0 0 0 14px rgba(11,103,208,0.02);}
     100%{box-shadow:0 0 0 0 rgba(255,255,255,0);}}
-  .popup-enter{opacity:0;transform:scale(0.8);}
-  .popup-exit{opacity:0;transform:scale(0.8);}
+  .popup-enter{opacity:0;transform:translate(-50%,-50%) scale(0.8);}
+  .popup-exit{opacity:0;transform:translate(-50%,-50%) scale(0.8);}
   @media (max-width:600px){.qr-img-wrap{width:36vw;max-width:200px;}}
 </style>
 </head>
@@ -64,24 +65,31 @@
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script>
 const GITHUB_RAW_CSV_URL="https://raw.githubusercontent.com/FJCRNX/QRactivosK/refs/heads/main/base.csv";
-const video=document.getElementById('cam'),overlay=document.getElementById('overlay'),
-octx=overlay.getContext('2d'),popupsContainer=document.getElementById('popups'),
-hint=document.getElementById('hint'),startBtn=document.getElementById('startBtn'),
-internalCanvas=document.createElement('canvas');
+const video=document.getElementById('cam');
+const overlay=document.getElementById('overlay');
+const octx=overlay.getContext('2d');
+const popupsContainer=document.getElementById('popups');
+const hint=document.getElementById('hint');
+const startBtn=document.getElementById('startBtn');
+const internalCanvas=document.createElement('canvas');
 let qrMap=new Map(),activePopups=new Map();
 let running=false,lastDetectionTime=0;
 const MAX_POPUPS=10,POPUP_DURATION=10000,DETECTION_INTERVAL=200;
 
-// Datos de orientación y profundidad
-let gyro={alpha:0,beta:0,gamma:0},gps={lat:0,lon:0};
-let depthZ=0,rotX=0,rotY=0;
+// --- NUEVAS VARIABLES PARA MOVIMIENTO 3D ---
+let gyroData={alpha:0,beta:0,gamma:0};
+let gpsOffset={lat:0,lon:0};
+let parallaxX=0,parallaxY=0,parallaxZ=1;
 
 // Cargar CSV
 async function loadCSVMap(){
-  let csvText='';const fallback="qr,imageUrl\nQR-24,https://png.pngtree.com/png-vector/20241225/ourlarge/pngtree-football-without-background-png-image_14845468.png";
+  let csvText='';
+  const fallback="qr,imageUrl\nQR-24,https://png.pngtree.com/png-vector/20241225/ourlarge/pngtree-football-without-background-png-image_14845468.png";
   try{
-    const r=await fetch(GITHUB_RAW_CSV_URL);if(!r.ok)throw new Error();
-    csvText=await r.text();hint.textContent="Base de datos cargada.";
+    const r=await fetch(GITHUB_RAW_CSV_URL);
+    if(!r.ok) throw new Error("Error CSV");
+    csvText=await r.text();
+    hint.textContent="Base de datos cargada.";
   }catch{csvText=fallback;hint.textContent="Usando datos de ejemplo.";}
   csvText.trim().split(/\r?\n/).slice(1).forEach(l=>{
     const [qr,img]=l.split(',').map(c=>c.trim());
@@ -92,8 +100,8 @@ async function loadCSVMap(){
 // Iniciar cámara
 async function startCamera(){
   try{
-    const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1920},height:{ideal:1080}},audio:false});
-    video.srcObject=s;
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1920},height:{ideal:1080}},audio:false});
+    video.srcObject=stream;
     video.onloadedmetadata=()=>{
       video.play();fitCanvas();running=true;
       requestAnimationFrame(detectionLoop);
@@ -108,7 +116,7 @@ function fitCanvas(){
   if(video.videoWidth)internalCanvas.width=video.videoWidth,internalCanvas.height=video.videoHeight;
 }
 
-// Detección QR
+// --- BUCLE DE DETECCIÓN QR ---
 function detectionLoop(){
   if(!running||video.readyState<video.HAVE_ENOUGH_DATA){requestAnimationFrame(detectionLoop);return;}
   if(Date.now()-lastDetectionTime<DETECTION_INTERVAL){requestAnimationFrame(detectionLoop);return;}
@@ -171,32 +179,18 @@ function createPopup(qr,imgUrl,loc){
   updatePopupPosition(qr,loc);
   setTimeout(()=>div.classList.remove('popup-enter'),200);
 }
-
-// Actualizar posición con profundidad
 function updatePopupPosition(qr,loc){
   const p=activePopups.get(qr);if(!p)return;
   const sx=overlay.width/internalCanvas.width,sy=overlay.height/internalCanvas.height;
   const cx=(loc.topLeftCorner.x+loc.bottomRightCorner.x)/2;
   const cy=(loc.topLeftCorner.y+loc.bottomRightCorner.y)/2;
-  const x=cx*sx;
-  const y=cy*sy;
-
-  const z=depthZ*200; // control de profundidad
-  const scale=1/(1+Math.abs(z)/500);
-
-  const rotation=`rotateX(${rotX*10}deg) rotateY(${rotY*10}deg)`;
-  const translation=`translate3d(${rotY*60}px,${rotX*60}px,${z}px)`;
+  const x=cx*sx+parallaxX*40;
+  const y=cy*sy+parallaxY*40;
+  const scale=parallaxZ;
   p.element.style.left=`${x}px`;
   p.element.style.top=`${y}px`;
-  p.element.style.transform=`${translation} ${rotation} scale(${scale})`;
-
-  // Brillo y blur según distancia
-  const img=p.element.querySelector('img');
-  const blur=Math.min(Math.abs(z)/80,8);
-  const brightness=1.2-Math.min(Math.abs(z)/800,0.4);
-  img.style.filter=`blur(${blur}px) brightness(${brightness}) drop-shadow(0 14px 25px rgba(2,6,23,0.55))`;
+  p.element.style.transform=`translate(-50%,-50%) scale(${scale})`;
 }
-
 function removePopup(qr){
   const p=activePopups.get(qr);if(!p)return;
   clearTimeout(p.timeoutId);
@@ -204,25 +198,28 @@ function removePopup(qr){
   setTimeout(()=>{p.element.remove();activePopups.delete(qr);},200);
 }
 
-// Movimiento 3D con giroscopio o GPS
+// --- GESTIÓN DE MOVIMIENTO / PARALLAX ---
 function setupSensors(){
   if(window.DeviceOrientationEvent){
     window.addEventListener('deviceorientation',e=>{
-      rotY=(e.gamma||0)/45; // izquierda-derecha
-      rotX=(e.beta||0)/45;  // arriba-abajo
-      depthZ=Math.sin((e.alpha||0)/90); // acercar/alejar
+      gyroData={alpha:e.alpha||0,beta:e.beta||0,gamma:e.gamma||0};
+      parallaxX=(gyroData.gamma||0)/60;
+      parallaxY=(gyroData.beta||0)/90;
+      parallaxZ=1+Math.abs(gyroData.beta||0)/180*0.2;
       for(const [qr,p] of activePopups.entries())updatePopupPosition(qr,p.location);
     });
   }
   if(navigator.geolocation){
     navigator.geolocation.watchPosition(pos=>{
-      gps.lat=pos.coords.latitude;gps.lon=pos.coords.longitude;
-      depthZ=(gps.lat%1-0.5)*4; // profundidad según posición
+      gpsOffset.lat=pos.coords.latitude;
+      gpsOffset.lon=pos.coords.longitude;
+      parallaxX=(gpsOffset.lon%1-0.5)*2;
+      parallaxY=(gpsOffset.lat%1-0.5)*2;
     });
   }
 }
 
-// Iniciar
+// Inicialización
 startBtn.onclick=async()=>{
   if(!running){
     await loadCSVMap();
